@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
+  <!-- Pixel Claude happy (passed review) -->
+  <rect width="64" height="72" fill="none"/>
+  
+  <!-- Body -->
+  <rect x="12" y="20" width="40" height="32" fill="#c87a5a"/>
+  <!-- Head bumps -->
+  <rect x="16" y="12" width="10" height="8" fill="#c87a5a"/>
+  <rect x="38" y="12" width="10" height="8" fill="#c87a5a"/>
+  <!-- Eyes (happy, closed arcs) -->
+  <rect x="18" y="32" width="10" height="4" fill="#1a1a1a"/>
+  <rect x="20" y="30" width="2" height="2" fill="#1a1a1a"/>
+  <rect x="26" y="30" width="2" height="2" fill="#1a1a1a"/>
+  <rect x="36" y="32" width="10" height="4" fill="#1a1a1a"/>
+  <rect x="38" y="30" width="2" height="2" fill="#1a1a1a"/>
+  <rect x="44" y="30" width="2" height="2" fill="#1a1a1a"/>
+  <!-- Mouth (big smile) -->
+  <rect x="22" y="42" width="20" height="4" fill="#a05a3a"/>
+  <rect x="24" y="46" width="16" height="2" fill="#a05a3a"/>
+  <!-- Blush -->
+  <rect x="14" y="36" width="6" height="4" fill="#e8a080"/>
+  <rect x="44" y="36" width="6" height="4" fill="#e8a080"/>
+  <!-- Tentacle feet (bouncy) -->
+  <rect x="14" y="52" width="6" height="8" fill="#c87a5a"/>
+  <rect x="24" y="54" width="6" height="8" fill="#c87a5a"/>
+  <rect x="34" y="54" width="6" height="8" fill="#c87a5a"/>
+  <rect x="44" y="52" width="6" height="8" fill="#c87a5a"/>
+  
+  <!-- Checkmark above -->
+  <rect x="48" y="4" width="4" height="4" fill="#22c55e"/>
+  <rect x="44" y="8" width="4" height="4" fill="#22c55e"/>
+  <rect x="40" y="12" width="4" height="4" fill="#22c55e"/>
+  <rect x="36" y="8" width="4" height="4" fill="#22c55e"/>
+  <rect x="32" y="4" width="4" height="4" fill="#22c55e"/>
+</svg>

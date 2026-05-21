@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80">
+  <!-- Pixel Claude thinking (with lightbulb) -->
+  <rect width="64" height="80" fill="none"/>
+  
+  <!-- Lightbulb above head -->
+  <rect x="24" y="2" width="4" height="4" fill="#f0c030"/>
+  <rect x="20" y="6" width="12" height="4" fill="#f0c030"/>
+  <rect x="20" y="10" width="12" height="4" fill="#f0c030"/>
+  <rect x="24" y="14" width="4" height="4" fill="#f0c030"/>
+  <!-- Rays -->
+  <rect x="16" y="6" width="4" height="4" fill="#f0c030"/>
+  <rect x="32" y="6" width="4" height="4" fill="#f0c030"/>
+  <rect x="24" y="0" width="4" height="2" fill="#f0c030"/>
+
+  <!-- Body -->
+  <rect x="12" y="28" width="40" height="32" fill="#c87a5a"/>
+  <!-- Head bumps -->
+  <rect x="16" y="20" width="10" height="8" fill="#c87a5a"/>
+  <rect x="38" y="20" width="10" height="8" fill="#c87a5a"/>
+  <!-- Eyes (looking up, thinking) -->
+  <rect x="20" y="38" width="8" height="4" fill="#1a1a1a"/>
+  <rect x="36" y="38" width="8" height="4" fill="#1a1a1a"/>
+  <!-- Mouth (small smile) -->
+  <rect x="24" y="48" width="16" height="4" fill="#a05a3a"/>
+  <!-- Tentacle feet -->
+  <rect x="16" y="60" width="6" height="10" fill="#c87a5a"/>
+  <rect x="24" y="60" width="6" height="10" fill="#c87a5a"/>
+  <rect x="34" y="60" width="6" height="10" fill="#c87a5a"/>
+  <rect x="42" y="60" width="6" height="10" fill="#c87a5a"/>
+</svg>
