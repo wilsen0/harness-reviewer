@@ -1,117 +1,244 @@
-# 🎭 Harness Reviewer — 给你的 AI 套上"紧箍咒"
+<p align="center">
+  <img src="assets/banner.svg" alt="Harness Reviewer Banner" width="640"/>
+</p>
 
-> 你的 AI 助手太听话了？写代码从不三思？方案交了就跑？
+<p align="center">
+  <strong>给你的 AI 助手套上"紧箍咒"</strong><br/>
+  跨平台 AI 行为治理系统 · 让 AI 学会三思而后行
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/platforms-Gemini%20%7C%20Claude%20%7C%20Codex-blue" alt="Platforms"/>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
+  <img src="https://img.shields.io/badge/mode-regex%20%7C%20LLM-orange" alt="Modes"/>
+</p>
+
+---
+
+## 😤 问题
+
+你的 AI 助手是不是这样的：
+
+- 方案写完就交，从不回头检查
+- 修 bug 只贴创可贴，不找根因
+- 代码越写越复杂，KISS 原则是什么？能吃吗？
+- 你说"帮我重构"，它给你堆了三层抽象
+
+## 💡 方案
+
+请一位**铁面判官**坐镇。每当 AI 准备交付时，判官跳出来灵魂拷问：
+
+> 🤔 "你真的找到问题根源了吗？还是在贴创可贴？"
 >
-> 是时候请一位**铁面判官**来管管它了。
+> 🧐 "交卷之前，你重新检查过逻辑冲突没？"
+>
+> 🪞 "这玩意儿符合 KISS 原则吗？还是在炫技？"
 
-## 这是什么？
+AI 必须老老实实做完自我反思，判官才会放行。
 
-Harness Reviewer 是一个跨平台的 AI 行为治理系统。它像一个安静坐在旁边的代码审查员——每当你的 AI 助手（Gemini / Claude / Codex）准备交付方案时，判官会跳出来灵魂拷问：
-
-- 🤔 "你真的找到问题根源了吗？还是在贴创可贴？"
-- 🧐 "交卷之前，你重新检查过逻辑冲突没？"
-- 🪞 "这玩意儿符合 KISS 原则吗？还是在炫技？"
-
-只有 AI 老老实实做完自我反思，判官才会放行。
-
-## 工作原理
+## 🔄 工作流程
 
 ```
-AI 输出方案 → 判官拦截 → 灵魂质询 → AI 自我反思 → 判官放行 ✅
-                                    ↑
-                              不合格？打回重来 🔄
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  AI 输出方案  │ ──→ │  判官拦截 🚨  │ ──→ │  灵魂质询 🔥  │ ──→ │  AI 自我反思  │
+└─────────────┘     └─────────────┘     └─────────────┘     └──────┬──────┘
+                                                                    │
+                         ┌──────────────────────────────────────────┘
+                         ↓
+                    合格？──→ ✅ 放行
+                    不合格？──→ 🔄 打回重来
 ```
 
-两种审计模式：
+## ⚡ 快速开始
 
-| 模式 | 特点 | 适合场景 |
-|------|------|----------|
-| `regex` (默认) | 零延迟，本地正则打分 | 日常开发，不想花钱 |
-| `llm` | 调用外部 LLM 深度语义审计 | 重要项目，需要严格把关 |
+### 1. Clone
 
-## 快速开始
+```bash
+git clone https://github.com/user/harness-reviewer.git
+cd harness-reviewer
+```
 
-### 1. 安装
+### 2. 配置（可选）
 
-把这个目录放到你的项目中，然后运行：
+默认配置开箱即用（regex 模式，三平台全部启用）。如需自定义：
+
+```bash
+# 编辑默认配置
+vim harness.config.json
+
+# 或创建本地覆盖（不会被 git 追踪，适合填 API Key）
+cp harness.config.example.json harness.config.local.json
+vim harness.config.local.json
+```
+
+配置结构：
+
+```json
+{
+  "platforms": {
+    "gemini": { "enabled": true, "scope": "project" },
+    "claude": { "enabled": true, "scope": "project" },
+    "codex":  { "enabled": true, "scope": "global" }
+  },
+  "audit": {
+    "mode": "regex"
+  }
+}
+```
+
+- `enabled`: 是否为该平台安装 hook
+- `scope`: `"project"`（写入当前目录的 `.gemini/` 或 `.claude/`）或 `"global"`（写入 `~/` 下的全局配置）
+- `mode`: `"regex"`（免费零延迟）或 `"llm"`（语义审计，需配置 API Key）
+
+### 3. 安装
 
 ```bash
 node scripts/install.cjs
 ```
 
-安装脚本会自动检测你用的 AI 工具（Gemini / Claude / Codex），并注册对应的 hook。
-
-### 2. 配置 LLM 模式（可选）
-
-如果你想启用更智能的语义审计：
+### 4. 查看状态
 
 ```bash
-# 复制模板
-cp scripts/harness-config.example.json .gemini/harness-config.json
-# 或者
-cp scripts/harness-config.example.json .claude/harness-config.json
+node scripts/status.cjs
 ```
 
-然后编辑配置，填入你自己的 API Key：
+输出示例：
+```
+📡 Platform Status:
+   Gemini CLI
+     Config:    ✅ enabled
+     Installed: ✅ hook found
+     Scope:     project
+
+   Claude Code
+     Config:    ✅ enabled
+     Installed: ✅ hook found
+     Scope:     project
+
+   Codex CLI
+     Config:    ✅ enabled
+     Installed: ✅ hook found
+     Scope:     global
+```
+
+### 安装后注意
+
+| 平台 | 首次使用 |
+|------|----------|
+| Gemini CLI | 首次触发时需要确认信任 hook |
+| Claude Code | 立即生效 |
+| Codex CLI | 运行 `/hooks` 命令信任 hook |
+
+## 🎛️ 两种审计模式
+
+| 模式 | 原理 | 延迟 | 成本 | 适合 |
+|------|------|------|------|------|
+| `regex` | 本地多信号打分（结构/意图/长度） | ~0ms | 免费 | 日常开发 |
+| `llm` | 外部 LLM 语义审计 | ~2-5s | 按调用计费 | 重要项目 |
+
+regex 模式不是简单的关键词匹配——它综合分析输出的结构信号、意图信号和长度信号进行打分，只在"看起来像交付方案"时才触发拦截。日常闲聊不会被打扰。
+
+### 启用 LLM 模式
+
+```bash
+cp harness.config.example.json harness.config.local.json
+```
+
+编辑 `harness.config.local.json`，设置 `mode` 为 `"llm"` 并填入 API Key：
 
 ```json
 {
-  "mode": "llm",
-  "llm_config": {
-    "provider": "openai",
-    "model": "qwen/qwen3.6-plus-preview:free",
-    "api_key": "你的真实 key",
-    "endpoint": "https://openrouter.ai/api/v1/chat/completions"
+  "audit": {
+    "mode": "llm",
+    "llm_config": {
+      "provider": "openai",
+      "model": "qwen/qwen3.6-plus-preview:free",
+      "api_key": "your-key-here",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions"
+    }
   }
 }
 ```
 
-支持 OpenRouter、OpenAI、Ollama 等兼容 OpenAI 格式的服务。
+兼容所有 OpenAI Chat Completions API 格式的服务（OpenRouter / OpenAI / Ollama / vLLM / LocalAI）。
 
-### 3. 自定义规则
+## 📝 自定义规则
 
-所有治理规则集中在 `rules.md` 一个文件里。想让判官更严厉或更温柔？直接改它就行，即时生效，无需重新安装。
+所有治理规则集中在 [`rules.md`](rules.md) 一个文件里：
 
-## 项目结构
+- 想让判官更严厉？加规则
+- 想让判官更温柔？删规则
+- 想换质询风格？改措辞
+
+**即改即生效**，无需重新安装。Hook 直接引用源文件。
+
+## 📁 项目结构
 
 ```
 harness-reviewer/
-├── README.md              ← 你在这里
-├── rules.md               ← 治理宪法（判官的行为准则）
-├── SKILL.md               ← 技能元数据
-├── .gitignore             ← 防止 API Key 泄露
-└── scripts/
-    ├── harness-main.cjs   ← 核心引擎（拦截 + 打分 + 质询）
-    ├── llm-client.cjs     ← LLM 调用客户端
-    ├── install.cjs         ← 一键安装脚本
-    └── harness-config.example.json  ← 配置模板
+├── scripts/
+│   ├── install.cjs                    ← 安装器（按配置注册 hook）
+│   ├── status.cjs                     ← 状态检查
+│   ├── harness-main.cjs              ← 审计内核
+│   └── llm-client.cjs                ← LLM 调用客户端
+├── harness.config.json                ← 默认配置（提交到 git）
+├── harness.config.local.json          ← 本地覆盖（gitignored，放 API Key）
+├── harness.config.example.json        ← LLM 模式配置示例
+├── rules.md                           ← 治理规则（判官的灵魂）
+├── SKILL.md                           ← 技能元数据
+└── README.md                          ← 你在这里 👋
 ```
 
-## 支持的平台
+## ❓ FAQ
 
-- ✅ Gemini CLI（`.gemini/settings.json`）
-- ✅ Claude Code（`.claude/settings.json`）
-- ✅ Codex CLI（`~/.codex/hooks.json`）
-- ✅ Kiro（自动配置 Codex CLI 路径）
+<details>
+<summary><b>AI 被拦截后怎么办？</b></summary>
 
-## FAQ
+AI 需要根据质询进行自我反思，回复中包含实质性的反思内容后说"已自检"即可放行。注意：光说"已自检"三个字不够，判官（LLM 模式下）会检查反思的深度。
+</details>
 
-**Q: AI 被拦截后怎么办？**
+<details>
+<summary><b>会不会太烦？</b></summary>
 
-A: AI 需要根据质询进行自我反思，然后回复"已自检"即可放行。
+不会。只有当输出"看起来像在交付方案"时才触发（打分 ≥ 4 分）。问个问题、聊个天、看个报告，都不会被拦。
+</details>
 
-**Q: 我不想用 LLM 模式，会花钱吗？**
+<details>
+<summary><b>regex 模式会误判吗？</b></summary>
 
-A: 默认 `regex` 模式纯本地运行，零成本零延迟。
+偶尔会。它用多信号打分来降低误判率：结构（标题/列表/代码块）、意图（关键动词）、长度，还有负信号（表格、过去时态）来排除报告类输出。如果觉得不够准，切 LLM 模式。
+</details>
 
-**Q: 规则改了需要重新安装吗？**
+<details>
+<summary><b>支持哪些 LLM 服务？</b></summary>
 
-A: 不需要。hook 直接引用源文件，改完即生效。
+任何兼容 OpenAI Chat Completions API 的服务都行：OpenRouter、OpenAI、Azure OpenAI、Ollama、vLLM、LocalAI……
+</details>
 
-**Q: 判官会不会太烦了？**
+<details>
+<summary><b>规则改了需要重新安装吗？</b></summary>
 
-A: 只有当 AI 输出"像是在交付方案"时才会触发。日常闲聊不会被拦截。
+不需要。Hook 直接引用源文件路径，改完 `rules.md` 立即生效。
+</details>
 
-## 许可
+<details>
+<summary><b>怎么只给某个平台装？</b></summary>
 
-随便用，记得给你的 AI 也套一个。🎭
+编辑 `harness.config.json`，把不需要的平台 `enabled` 设为 `false`，然后重新 `node scripts/install.cjs`。
+</details>
+
+<details>
+<summary><b>project scope 和 global scope 有什么区别？</b></summary>
+
+- `project`: hook 只在当前项目目录生效（写入 `.gemini/settings.json` 或 `.claude/settings.json`）
+- `global`: hook 对所有项目生效（写入 `~/.gemini/settings.json` 或 `~/.claude/settings.json`）
+- Codex 只支持 global scope
+</details>
+
+## 🤝 贡献
+
+欢迎 PR。改规则、加平台支持、优化打分逻辑，都行。
+
+## 📄 License
+
+[MIT](LICENSE) — 随便用，记得也给你的 AI 套一个。🪢

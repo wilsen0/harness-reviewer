@@ -9,8 +9,10 @@ const skillDir = path.resolve(__dirname, '..');
 const mainKernelPath = path.join(skillDir, 'scripts', 'harness-main.cjs');
 const cwd = process.cwd();
 
-console.log(`🚀 Starting Closed-Loop Harness Installation...`);
+console.log(`🚀 Starting Harness Installation...`);
 console.log(`📍 Skill Source: ${skillDir}`);
+
+// ─── Utilities ───────────────────────────────────────────────────────────────
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -27,25 +29,6 @@ function readJson(filePath, fallback = {}) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
     return fallback;
-  }
-}
-
-function ensureHarnessConfig(platformDir) {
-  const configPath = path.join(cwd, platformDir, 'harness-config.json');
-  ensureHarnessConfigAt(configPath);
-}
-
-function ensureHarnessConfigAt(configPath) {
-  if (!fs.existsSync(configPath)) {
-    writeJson(configPath, {
-      mode: "regex",
-      llm_config: {
-        provider: "openai",
-        model: "qwen/qwen3.6-plus-preview:free",
-        api_key: "sk-or-v1-...",
-        endpoint: "https://openrouter.ai/api/v1/chat/completions"
-      }
-    });
   }
 }
 
@@ -96,75 +79,147 @@ function isExecutable(filePath) {
 
 function resolveCodexCliPath() {
   const candidates = [];
-
   if (process.env.CODEX_CLI_PATH) candidates.push(process.env.CODEX_CLI_PATH);
-
   try {
     const fromPath = execFileSync('bash', ['-lc', 'command -v codex'], { encoding: 'utf8' }).trim();
     if (fromPath) candidates.push(fromPath);
   } catch (error) {}
-
   return [...new Set(candidates)].find(isExecutable) || null;
 }
 
-/**
- * Update Platform Config
- */
-function registerHook(platformDir, settingsFile, hookType, configSetter) {
-  const settingsPath = path.join(cwd, platformDir, settingsFile);
-  ensureDir(path.dirname(settingsPath));
-  let settings = readJson(settingsPath, {});
+// ─── Load Config ─────────────────────────────────────────────────────────────
 
-  settings = configSetter(settings);
-  writeJson(settingsPath, settings);
-  ensureHarnessConfig(platformDir);
-  console.log(`✅ Hook registered for ${platformDir}`);
+const configLocalPath = path.join(skillDir, 'harness.config.local.json');
+const configDefaultPath = path.join(skillDir, 'harness.config.json');
+const activeConfigPath = fs.existsSync(configLocalPath) ? configLocalPath : configDefaultPath;
+
+if (!fs.existsSync(activeConfigPath)) {
+  console.error(`❌ Config not found: ${activeConfigPath}`);
+  console.error(`   Run from the skill directory or create config/harness-config.json first.`);
+  process.exit(1);
 }
 
-function registerCodexGlobalHook() {
+const config = readJson(activeConfigPath);
+const platforms = config.platforms || {};
+const harnessCommand = `node ${mainKernelPath}`;
+
+// ─── Platform Installers ─────────────────────────────────────────────────────
+
+function installGemini(platformConfig) {
+  const scope = platformConfig.scope || 'project';
+  let settingsPath;
+
+  if (scope === 'global') {
+    settingsPath = path.join(os.homedir(), '.gemini', 'settings.json');
+  } else {
+    const projectDir = path.join(cwd, '.gemini');
+    if (!fs.existsSync(projectDir)) {
+      ensureDir(projectDir);
+    }
+    settingsPath = path.join(projectDir, 'settings.json');
+  }
+
+  ensureDir(path.dirname(settingsPath));
+  const settings = readJson(settingsPath, {});
+
+  if (!settings.hooks) settings.hooks = {};
+  if (!settings.hooks.AfterAgent) settings.hooks.AfterAgent = [];
+
+  const exists = settings.hooks.AfterAgent.some(g =>
+    g.hooks && g.hooks.some(h => h.command === harnessCommand)
+  );
+
+  if (!exists) {
+    settings.hooks.AfterAgent.push({
+      matcher: "*",
+      hooks: [{ name: "harness-reviewer", type: "command", command: harnessCommand }]
+    });
+  } else {
+    settings.hooks.AfterAgent.forEach(g => {
+      g.hooks.forEach(h => { if (h.name === 'harness-reviewer') h.command = harnessCommand; });
+    });
+  }
+
+  writeJson(settingsPath, settings);
+  console.log(`✅ Gemini CLI: hook registered (${scope}) → ${settingsPath}`);
+}
+
+function installClaude(platformConfig) {
+  const scope = platformConfig.scope || 'project';
+  let settingsPath;
+
+  if (scope === 'global') {
+    settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+  } else {
+    const projectDir = path.join(cwd, '.claude');
+    if (!fs.existsSync(projectDir)) {
+      ensureDir(projectDir);
+    }
+    settingsPath = path.join(projectDir, 'settings.json');
+  }
+
+  ensureDir(path.dirname(settingsPath));
+  const settings = readJson(settingsPath, {});
+
+  if (!settings.hooks) settings.hooks = {};
+  if (!settings.hooks.Stop) settings.hooks.Stop = [];
+
+  const exists = settings.hooks.Stop.some(g =>
+    g.hooks && g.hooks.some(h => h.command === harnessCommand)
+  );
+
+  if (!exists) {
+    settings.hooks.Stop.push({
+      matcher: "",
+      hooks: [{ type: "command", command: harnessCommand }]
+    });
+  } else {
+    settings.hooks.Stop.forEach(g => {
+      g.hooks.forEach(h => { if (h.command && h.command.includes('harness-main')) h.command = harnessCommand; });
+    });
+  }
+
+  writeJson(settingsPath, settings);
+  console.log(`✅ Claude Code: hook registered (${scope}) → ${settingsPath}`);
+}
+
+function installCodex(platformConfig) {
+  // Codex only supports global hooks
   const codexDir = path.join(os.homedir(), '.codex');
   const hooksPath = path.join(codexDir, 'hooks.json');
-  const configPath = path.join(codexDir, 'config.toml');
+  const tomlPath = path.join(codexDir, 'config.toml');
 
   ensureDir(codexDir);
 
-  let hooksConfig = {};
-  if (fs.existsSync(hooksPath)) {
-    try { hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8')); } catch (e) {}
-  }
-
+  let hooksConfig = readJson(hooksPath, {});
   if (!hooksConfig.hooks) hooksConfig.hooks = {};
   if (!hooksConfig.hooks.Stop) hooksConfig.hooks.Stop = [];
 
   const stopGroups = hooksConfig.hooks.Stop;
   const existingGroup = stopGroups.find(group =>
     Array.isArray(group.hooks) &&
-    group.hooks.some(hook => hook.type === 'command' && hook.command === `node ${mainKernelPath}`)
+    group.hooks.some(hook => hook.type === 'command' && hook.command === harnessCommand)
   );
 
   if (!existingGroup) {
     stopGroups.push({
-      hooks: [
-        {
-          type: "command",
-          command: `node ${mainKernelPath}`
-        }
-      ]
+      hooks: [{ type: "command", command: harnessCommand }]
     });
   }
 
   writeJson(hooksPath, hooksConfig);
 
-  let nextToml = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
-  nextToml = removeTomlKey(nextToml, 'notify');
-  nextToml = upsertTomlBoolean(nextToml, 'features', 'codex_hooks', true);
-  fs.writeFileSync(configPath, nextToml);
+  // Update config.toml
+  let toml = fs.existsSync(tomlPath) ? fs.readFileSync(tomlPath, 'utf8') : '';
+  toml = removeTomlKey(toml, 'notify');
+  toml = removeTomlKey(toml, 'codex_hooks');
+  toml = upsertTomlBoolean(toml, 'features', 'hooks', true);
+  fs.writeFileSync(tomlPath, toml);
 
-  ensureHarnessConfigAt(path.join(codexDir, 'harness-config.json'));
-  console.log(`✅ Hook registered for ~/.codex`);
+  console.log(`✅ Codex CLI: hook registered (global) → ${hooksPath}`);
 }
 
-function registerKiroCodexExecutable() {
+function installKiro() {
   const kiroConfigDir = path.join(os.homedir(), '.config', 'Kiro');
   const kiroExtensionsDir = path.join(os.homedir(), '.kiro', 'extensions');
 
@@ -172,7 +227,7 @@ function registerKiroCodexExecutable() {
 
   const codexCliPath = resolveCodexCliPath();
   if (!codexCliPath) {
-    console.log(`⚠️  Kiro detected, but no Codex CLI was found on PATH. Skipping Kiro Codex wiring.`);
+    console.log(`⚠️  Kiro detected, but no Codex CLI found on PATH. Skipping.`);
     return;
   }
 
@@ -180,52 +235,53 @@ function registerKiroCodexExecutable() {
   const settings = readJson(settingsPath, {});
   settings['chatgpt.cliExecutable'] = codexCliPath;
   writeJson(settingsPath, settings);
-  console.log(`✅ Kiro configured to use Codex CLI: ${codexCliPath}`);
+  console.log(`✅ Kiro: configured to use Codex CLI → ${codexCliPath}`);
 }
 
-// 1. Gemini CLI
-if (fs.existsSync(path.join(cwd, '.gemini'))) {
-  registerHook('.gemini', 'settings.json', 'AfterAgent', (s) => {
-    if (!s.hooks) s.hooks = {};
-    if (!s.hooks.AfterAgent) s.hooks.AfterAgent = [];
-    const exists = s.hooks.AfterAgent.some(g => g.hooks && g.hooks.some(h => h.name === 'harness-reviewer'));
-    if (!exists) {
-      s.hooks.AfterAgent.push({
-        matcher: "*",
-        hooks: [{ name: "harness-reviewer", type: "command", command: `node ${mainKernelPath}` }]
-      });
-    } else {
-      // Update existing command path
-      s.hooks.AfterAgent.forEach(g => {
-        g.hooks.forEach(h => { if (h.name === 'harness-reviewer') h.command = `node ${mainKernelPath}`; });
-      });
-    }
-    return s;
-  });
+// ─── Execute Installation ────────────────────────────────────────────────────
+
+const results = { installed: [], skipped: [] };
+
+if (platforms.gemini && platforms.gemini.enabled) {
+  installGemini(platforms.gemini);
+  results.installed.push('Gemini CLI');
+} else {
+  results.skipped.push('Gemini CLI');
 }
 
-// 2. Claude Code
-if (fs.existsSync(path.join(cwd, '.claude'))) {
-  registerHook('.claude', 'settings.json', 'Stop', (s) => {
-    if (!s.hooks) s.hooks = {};
-    if (!s.hooks.Stop) s.hooks.Stop = [];
-    const exists = s.hooks.Stop.some(g => g.hooks && g.hooks.some(h => h.name === 'harness-reviewer'));
-    if (!exists) {
-      s.hooks.Stop.push({
-        hooks: [{ name: "harness-reviewer", type: "command", command: `node ${mainKernelPath}` }]
-      });
-    } else {
-      s.hooks.Stop.forEach(g => {
-        g.hooks.forEach(h => { if (h.name === 'harness-reviewer') h.command = `node ${mainKernelPath}`; });
-      });
-    }
-    return s;
-  });
+if (platforms.claude && platforms.claude.enabled) {
+  installClaude(platforms.claude);
+  results.installed.push('Claude Code');
+} else {
+  results.skipped.push('Claude Code');
 }
 
-// 3. Codex CLI / IDE extension (global hooks/config)
-registerCodexGlobalHook();
-registerKiroCodexExecutable();
+if (platforms.codex && platforms.codex.enabled) {
+  installCodex(platforms.codex);
+  results.installed.push('Codex CLI');
+  installKiro();
+} else {
+  results.skipped.push('Codex CLI');
+}
 
-console.log(`\n✨ Harness V4.0 (Closed-Loop) deployed successfully.`);
-console.log(`💡 Rules are centrally managed in: ${path.join(skillDir, 'rules.md')}`);
+// ─── Summary ─────────────────────────────────────────────────────────────────
+
+console.log(`\n✨ Harness V4.1 deployed.`);
+console.log(`   Mode: ${config.audit && config.audit.mode || 'regex'}`);
+console.log(`   Installed: ${results.installed.join(', ') || '(none)'}`);
+if (results.skipped.length > 0) {
+  console.log(`   Skipped (disabled): ${results.skipped.join(', ')}`);
+}
+console.log(`\n📁 Manage everything in one place:`);
+console.log(`   Config: ${activeConfigPath}`);
+console.log(`   Rules:  ${path.join(skillDir, 'rules.md')}`);
+console.log(`\n📋 Post-install:`);
+if (results.installed.includes('Codex CLI')) {
+  console.log(`   • Codex: Run /hooks to trust the hook on first use.`);
+}
+if (results.installed.includes('Gemini CLI')) {
+  console.log(`   • Gemini: Approve the hook trust prompt on first trigger.`);
+}
+if (results.installed.includes('Claude Code')) {
+  console.log(`   • Claude: Active immediately.`);
+}

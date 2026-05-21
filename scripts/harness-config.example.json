@@ -1,9 +1,0 @@
-{
-  "mode": "llm",
-  "llm_config": {
-    "provider": "openai",
-    "model": "qwen/qwen3.6-plus-preview:free",
-    "api_key": "sk-or-v1-YOUR_API_KEY_HERE",
-    "endpoint": "https://openrouter.ai/api/v1/chat/completions"
-  }
-}

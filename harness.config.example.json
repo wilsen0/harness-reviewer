@@ -1,0 +1,35 @@
+{
+  "_doc": "Copy this file to harness-config.local.json and fill in your API key for LLM mode.",
+
+  "platforms": {
+    "gemini": {
+      "enabled": true,
+      "scope": "project",
+      "hook_event": "AfterAgent",
+      "_scope_options": "project = .gemini/settings.json in cwd | global = ~/.gemini/settings.json"
+    },
+    "claude": {
+      "enabled": true,
+      "scope": "project",
+      "hook_event": "Stop",
+      "_scope_options": "project = .claude/settings.json in cwd | global = ~/.claude/settings.json"
+    },
+    "codex": {
+      "enabled": true,
+      "scope": "global",
+      "hook_event": "Stop",
+      "_scope_options": "Codex only supports global (~/.codex/hooks.json)"
+    }
+  },
+  "audit": {
+    "mode": "llm",
+    "_mode_options": "regex (zero-latency, free) | llm (semantic, requires API key)",
+    "llm_config": {
+      "provider": "openai",
+      "model": "qwen/qwen3.6-plus-preview:free",
+      "api_key": "sk-or-v1-YOUR_KEY_HERE",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "_providers": "Any OpenAI-compatible endpoint: OpenRouter, OpenAI, Ollama (http://localhost:11434/v1/chat/completions), etc."
+    }
+  }
+}
