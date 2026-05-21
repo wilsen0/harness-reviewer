@@ -4,16 +4,30 @@
 
 <p align="center">
   <strong>给你的 AI 助手套上"紧箍咒"</strong><br/>
-  跨平台 AI 行为治理系统 · 让 AI 学会三思而后行
+  跨平台 AI Agent Skill · 让 AI 学会三思而后行
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/type-Agent%20Skill-purple" alt="Type"/>
   <img src="https://img.shields.io/badge/platforms-Gemini%20%7C%20Claude%20%7C%20Codex-blue" alt="Platforms"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
   <img src="https://img.shields.io/badge/mode-regex%20%7C%20LLM-orange" alt="Modes"/>
 </p>
 
 ---
+
+## 这是什么？
+
+这是一个 **Agent Skill**（AI 代理技能），通过各平台的 Hook 机制自动注入到 AI 的工作流中。它不是一个独立应用，而是寄生在你已有的 AI 工具（Gemini CLI / Claude Code / Codex CLI）上的治理层。
+
+**工作方式：** 每当 AI 完成一轮输出准备交付时，Skill 自动拦截并审计输出质量，要求 AI 进行自我检查后才放行。
+
+**兼容平台：**
+| 平台 | Skill 机制 | Hook 事件 |
+|------|-----------|-----------|
+| Gemini CLI | [Agent Skills](https://geminicli.com/docs/cli/tutorials/skills-getting-started/) | `AfterAgent` |
+| Claude Code | [Hooks](https://code.claude.com/docs/en/hooks) | `Stop` |
+| Codex CLI | [Hooks](https://developers.openai.com/codex/hooks/) | `Stop` |
 
 ## 😤 问题
 
@@ -38,27 +52,72 @@ AI 必须老老实实做完自我反思，判官才会放行。
 
 ## 🔄 工作流程
 
+<table>
+<tr>
+<td align="center" width="160">
+<img src="assets/claude-sweating.svg" width="64"/><br/>
+<strong>1. 判官拦截</strong><br/>
+<sub>AI 交方案，判官跳出来</sub>
+</td>
+<td align="center" width="40">➡️</td>
+<td align="center" width="160">
+<img src="assets/claude-thinking.svg" width="64"/><br/>
+<strong>2. 灵魂质询</strong><br/>
+<sub>AI 被迫自我反思</sub>
+</td>
+<td align="center" width="40">➡️</td>
+<td align="center" width="160">
+<img src="assets/claude-pass.svg" width="64"/><br/>
+<strong>3. 审核通过</strong><br/>
+<sub>反思合格，放行 ✅</sub>
+</td>
+</tr>
+</table>
+
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  AI 输出方案  │ ──→ │  判官拦截 🚨  │ ──→ │  灵魂质询 🔥  │ ──→ │  AI 自我反思  │
-└─────────────┘     └─────────────┘     └─────────────┘     └──────┬──────┘
-                                                                    │
-                         ┌──────────────────────────────────────────┘
-                         ↓
-                    合格？──→ ✅ 放行
-                    不合格？──→ 🔄 打回重来
+AI 输出方案 → 判官拦截 🚨 → 灵魂质询 🔥 → AI 自我反思 → 合格放行 ✅
+                                                         ↑
+                                              不合格？打回重来 🔄
 ```
 
 ## ⚡ 快速开始
 
-### 1. Clone
+### 方式一：作为 Skill 使用（推荐）
 
+**Gemini CLI：**
 ```bash
-git clone https://github.com/user/harness-reviewer.git
-cd harness-reviewer
+# 将此仓库 clone 到 Gemini 的 skills 目录
+git clone https://github.com/user/harness-reviewer.git ~/.gemini/skills/harness-reviewer
+# 安装 hook
+node ~/.gemini/skills/harness-reviewer/scripts/install.cjs
 ```
 
-### 2. 配置（可选）
+**Claude Code：**
+```bash
+# 将此仓库 clone 到 Claude 的 skills 目录
+git clone https://github.com/user/harness-reviewer.git ~/.claude/skills/harness-reviewer
+# 安装 hook
+node ~/.claude/skills/harness-reviewer/scripts/install.cjs
+```
+
+**Codex CLI：**
+```bash
+# 将此仓库 clone 到 Codex 的 skills 目录
+git clone https://github.com/user/harness-reviewer.git ~/.codex/skills/harness-reviewer
+# 安装 hook
+node ~/.codex/skills/harness-reviewer/scripts/install.cjs
+```
+
+### 方式二：独立安装
+
+```bash
+# Clone 到任意位置
+git clone https://github.com/user/harness-reviewer.git
+cd harness-reviewer
+node scripts/install.cjs
+```
+
+### 配置（可选）
 
 默认配置开箱即用（regex 模式，三平台全部启用）。如需自定义：
 
@@ -90,13 +149,13 @@ vim harness.config.local.json
 - `scope`: `"project"`（写入当前目录的 `.gemini/` 或 `.claude/`）或 `"global"`（写入 `~/` 下的全局配置）
 - `mode`: `"regex"`（免费零延迟）或 `"llm"`（语义审计，需配置 API Key）
 
-### 3. 安装
+### 安装
 
 ```bash
 node scripts/install.cjs
 ```
 
-### 4. 查看状态
+### 查看状态
 
 ```bash
 node scripts/status.cjs
