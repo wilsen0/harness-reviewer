@@ -1,35 +1,45 @@
 {
-  "_doc": "Copy this file to harness-config.local.json and fill in your API key for LLM mode.",
+  "_doc": "Copy this file to harness.config.local.json to override the default config (gitignored). Use this to fill in your API key for LLM mode.",
+
+  "version": 2,
 
   "platforms": {
     "gemini": {
+      "_doc": "Gemini CLI: registers an AfterAgent hook.",
       "enabled": true,
-      "scope": "project",
-      "hook_event": "AfterAgent",
-      "_scope_options": "project = .gemini/settings.json in cwd | global = ~/.gemini/settings.json"
+      "scope": "project"
     },
     "claude": {
+      "_doc": "Claude Code: registers a Stop hook.",
       "enabled": true,
-      "scope": "project",
-      "hook_event": "Stop",
-      "_scope_options": "project = .claude/settings.json in cwd | global = ~/.claude/settings.json"
+      "scope": "project"
     },
     "codex": {
+      "_doc": "Codex CLI: only global scope is supported.",
       "enabled": true,
-      "scope": "global",
-      "hook_event": "Stop",
-      "_scope_options": "Codex only supports global (~/.codex/hooks.json)"
+      "scope": "global"
     }
   },
+
+  "state_dir": null,
+  "_state_dir_doc": "Where per-session audit state lives. Falls back to <cwd>/.harness/state/. Set to e.g. ~/.harness/state/ for global.",
+
   "audit": {
     "mode": "llm",
-    "_mode_options": "regex (zero-latency, free) | llm (semantic, requires API key)",
+    "_mode_doc": "regex (default) = local parseable self-review format | llm = semantic judge",
+    "dry_run": false,
+    "_dry_run_doc": "When true, harness logs decisions to stderr and exits 0 without blocking. Use for testing.",
     "llm_config": {
       "provider": "openai",
       "model": "qwen/qwen3.6-plus-preview:free",
       "api_key": "sk-or-v1-YOUR_KEY_HERE",
       "endpoint": "https://openrouter.ai/api/v1/chat/completions",
-      "_providers": "Any OpenAI-compatible endpoint: OpenRouter, OpenAI, Ollama (http://localhost:11434/v1/chat/completions), etc."
+      "_providers_doc": "Any OpenAI-compatible endpoint: OpenRouter, OpenAI, Ollama (http://localhost:11434/v1/chat/completions), vLLM, LocalAI."
     }
+  },
+
+  "kiro": {
+    "auto_configure": false,
+    "_auto_configure_doc": "When true, install.cjs will also write chatgpt.cliExecutable to ~/.config/Kiro/User/settings.json so Kiro reuses Codex CLI. Off by default — opt-in to avoid surprise side effects."
   }
 }

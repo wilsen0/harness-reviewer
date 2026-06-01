@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "session_id": "f51d51ff-1dcf-4dd1-afa2-40683478f828",
+  "deny_count": 1,
+  "consecutive_passes": 0,
+  "last_scenario": "fix",
+  "last_decision": "deny",
+  "last_seen_ts": "2026-06-01T06:28:00.388Z",
+  "denial_history": [
+    {
+      "scenario": "fix",
+      "failed_fields": [
+        "(缺少 ## Self-Review 段)"
+      ],
+      "ts": "2026-06-01T06:28:00.387Z"
+    }
+  ],
+  "effective_mode": "regex",
+  "v1_magic_word_seen": true
+}

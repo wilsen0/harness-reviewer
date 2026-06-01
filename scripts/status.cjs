@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-
-/**
- * Harness Status Checker
- * Shows which platforms are configured and whether hooks are actually installed.
- */
+'use strict';
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const state = require('./state.cjs');
 
 const skillDir = path.resolve(__dirname, '..');
 const configLocalPath = path.join(skillDir, 'harness.config.local.json');
@@ -16,11 +13,19 @@ const configPath = fs.existsSync(configLocalPath) ? configLocalPath : configDefa
 const mainKernelPath = path.join(skillDir, 'scripts', 'harness-main.cjs');
 const harnessCommand = `node ${mainKernelPath}`;
 
+const VERSION = (() => {
+  try {
+    return fs.readFileSync(path.join(skillDir, 'VERSION'), 'utf8').trim();
+  } catch (_) {
+    return 'unknown';
+  }
+})();
+
 function readJson(filePath, fallback = null) {
   if (!fs.existsSync(filePath)) return fallback;
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (e) {
+  } catch (_) {
     return fallback;
   }
 }
@@ -32,7 +37,6 @@ function checkGeminiHook(scope) {
   } else {
     paths.push(path.join(process.cwd(), '.gemini', 'settings.json'));
   }
-
   for (const p of paths) {
     const settings = readJson(p);
     if (!settings || !settings.hooks || !settings.hooks.AfterAgent) continue;
@@ -51,7 +55,6 @@ function checkClaudeHook(scope) {
   } else {
     paths.push(path.join(process.cwd(), '.claude', 'settings.json'));
   }
-
   for (const p of paths) {
     const settings = readJson(p);
     if (!settings || !settings.hooks || !settings.hooks.Stop) continue;
@@ -72,15 +75,14 @@ function checkCodexHook() {
   const found = hooksConfig.hooks.Stop.some(g =>
     g.hooks && g.hooks.some(h => h.command && h.command.includes('harness-main'))
   );
-  return { installed: found, path: hooksPath };
+  return { found, installed: found, path: hooksPath };
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
-console.log(`\n🔍 Harness Status Report`);
+console.log(`\n🔍 Harness Status Report (v${VERSION})`);
 console.log(`${'─'.repeat(60)}`);
 
-// Config
 if (!fs.existsSync(configPath)) {
   console.log(`\n❌ Config not found: ${configPath}`);
   process.exit(1);
@@ -91,18 +93,41 @@ const platforms = config.platforms || {};
 const audit = config.audit || {};
 
 console.log(`\n⚙️  Config: ${configPath}`);
+const configVersion = config.version;
+if (configVersion === 2) {
+  console.log(`   Schema version: ✅ v2`);
+} else if (configVersion === undefined) {
+  console.log(`   Schema version: ⚠️  unset (expected 2). Run install again to migrate.`);
+} else {
+  console.log(`   Schema version: ⚠️  v${configVersion} (expected 2). Update config to v2 schema.`);
+}
 console.log(`   Audit mode: ${audit.mode || 'regex'}`);
+if (audit.dry_run) console.log(`   Dry-run: ⚠️  ENABLED (harness will log but not block)`);
 if (audit.mode === 'llm' && audit.llm_config) {
   console.log(`   LLM provider: ${audit.llm_config.provider || '?'}`);
   console.log(`   LLM model: ${audit.llm_config.model || '?'}`);
-  const hasKey = audit.llm_config.api_key && !audit.llm_config.api_key.includes('...');
+  const hasKey = audit.llm_config.api_key && !audit.llm_config.api_key.includes('YOUR_KEY');
   console.log(`   API key: ${hasKey ? '✅ configured' : '⚠️  placeholder (not set)'}`);
+}
+
+const stateDir = state.resolveStateDir(config);
+const sessions = state.listSessions(stateDir);
+const escalated = sessions.filter(s => s.effective_mode === 'llm').length;
+console.log(`\n📂 Audit state:`);
+console.log(`   State dir: ${stateDir}`);
+console.log(`   Active sessions: ${sessions.length}`);
+console.log(`   Escalated to LLM: ${escalated}`);
+if (sessions.length > 0) {
+  const recent = sessions.sort((a, b) => (b.last_seen_ts || '').localeCompare(a.last_seen_ts || '')).slice(0, 3);
+  console.log(`   Recent sessions:`);
+  for (const s of recent) {
+    console.log(`     - ${s.session_id.slice(0, 32)}: deny_count=${s.deny_count}, mode=${s.effective_mode}, last_seen=${s.last_seen_ts}`);
+  }
 }
 
 console.log(`\n📡 Platform Status:`);
 console.log(`${'─'.repeat(60)}`);
 
-// Gemini
 const geminiConfig = platforms.gemini || { enabled: false };
 const geminiCheck = checkGeminiHook(geminiConfig.scope || 'project');
 const geminiEnabled = geminiConfig.enabled ? '✅ enabled' : '⬚ disabled';
@@ -113,7 +138,6 @@ console.log(`     Installed: ${geminiInstalled}`);
 console.log(`     Scope:     ${geminiConfig.scope || 'project'}`);
 console.log(`     Hook file: ${geminiCheck.path}`);
 
-// Claude
 const claudeConfig = platforms.claude || { enabled: false };
 const claudeCheck = checkClaudeHook(claudeConfig.scope || 'project');
 const claudeEnabled = claudeConfig.enabled ? '✅ enabled' : '⬚ disabled';
@@ -124,7 +148,6 @@ console.log(`     Installed: ${claudeInstalled}`);
 console.log(`     Scope:     ${claudeConfig.scope || 'project'}`);
 console.log(`     Hook file: ${claudeCheck.path}`);
 
-// Codex
 const codexConfig = platforms.codex || { enabled: false };
 const codexCheck = checkCodexHook();
 const codexEnabled = codexConfig.enabled ? '✅ enabled' : '⬚ disabled';
@@ -135,7 +158,6 @@ console.log(`     Installed: ${codexInstalled}`);
 console.log(`     Scope:     global (Codex only supports global hooks)`);
 console.log(`     Hook file: ${codexCheck.path}`);
 
-// Summary
 console.log(`\n${'─'.repeat(60)}`);
 const mismatches = [];
 if (geminiConfig.enabled && !geminiCheck.installed) mismatches.push('Gemini');

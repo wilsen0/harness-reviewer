@@ -1,28 +1,27 @@
 {
+  "version": 2,
+
   "platforms": {
     "gemini": {
       "enabled": true,
-      "scope": "project",
-      "hook_event": "AfterAgent"
+      "scope": "project"
     },
     "claude": {
       "enabled": true,
-      "scope": "project",
-      "hook_event": "Stop"
+      "scope": "project"
     },
     "codex": {
       "enabled": true,
-      "scope": "global",
-      "hook_event": "Stop"
+      "scope": "global"
     }
   },
+
+  "state_dir": null,
   "audit": {
     "mode": "regex",
-    "llm_config": {
-      "provider": "openai",
-      "model": "qwen/qwen3.6-plus-preview:free",
-      "api_key": "",
-      "endpoint": "https://openrouter.ai/api/v1/chat/completions"
-    }
+    "dry_run": false
+  },
+  "kiro": {
+    "auto_configure": false
   }
 }
