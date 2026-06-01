@@ -52,6 +52,10 @@ const FIXTURE_MSGS = {
   code_valid_review: '下面是 user 模块的改动：\n\n```js\nfunction createUser(data) {\n  return db.insert(\'users\', data);\n}\n```\n\n## Self-Review\n- 逻辑冲突: 重新阅读了 `createUser` 函数和 `db.insert` 的实现，没有发现逻辑冲突。\n- 边界情况: 已考虑 `nullInput`、`emptyObject`、`oversizedField`、`typeMismatch` 四种边界情况。\n- 已有功能影响: 用 grep 确认现有调用方只有 `test/user.spec.ts` 一处。',
   design_no_review: '## 缓存层方案\n\n1. 引入 Redis 作为缓存层降低数据库压力\n2. 配置连接池和 TTL 策略处理过期\n3. 部署到生产环境，监控命中率指标',
   design_valid_review: '## 缓存层方案\n\n1. 引入 Redis 作为缓存层降低数据库压力\n2. 配置连接池和 TTL 策略处理过期\n3. 部署到生产环境，监控命中率指标\n\n## Self-Review\n- 核心诉求: 用户的诉求是降低数据库压力，`cacheHitRate` 提升是核心指标，不是简单上 Redis。\n- 逻辑冲突: 重新阅读方案，缓存失效策略与现有 `cronTask` 没有重叠，`sessionWrite` 路径独立。\n- 第一性原理依据: 从延迟分布来看 `p99Latency` 在 DB 上，缓存能直接解决，不要为了泛化而泛化。',
+  // v1_migration: must be (a) ≥ 50 chars to clear the short-message passthrough gate,
+  // (b) have structure (numbered list) to clear the "no structure + < 500 chars" passthrough,
+  // (c) include "已自检" magic word, (d) NOT have a valid ## Self-Review block.
+  // Item 3 is short and lacks a past-tense verb, so the past-tense passthrough gate doesn't fire.
   v1_migration: '我修复了 token 过期的 bug，下面是详细的改动说明、改动文件清单和测试结果摘要，请查看具体改动。\n\n1. 修改了 `src/auth/session.ts` 的过期判断逻辑\n2. 更新了相关测试用例\n3. 已自检。',
 };
 

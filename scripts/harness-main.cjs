@@ -221,7 +221,7 @@ function hasConcreteToken(content) {
 
 function validateSelfReview(text, scenario) {
   const block = extractSelfReviewBlock(text);
-  if (!block) return { ok: false, reason: 'no-block', failedFields: ['(缺少 ## Self-Review 段)'] };
+  if (!block) return { ok: false, reason: 'no-block', failedFields: ['缺少 ## Self-Review 段'] };
   const fields = parseBulletFields(block);
   const required = FIELD_MATRIX[scenario] || [];
   const failedFields = [];
@@ -340,7 +340,8 @@ async function main() {
   }
 
   if (state.shouldHardBlock(sess)) {
-    const reason = '需要人工确认：本会话已累计 4 次拦截，自动升级到人工审核。请联系 reviewer 人工放行。';
+    const stateDirForRecovery = state.resolveStateDir(config);
+    const reason = `需要人工确认：本会话已累计 4 次拦截，自动升级到人工审核。请联系 reviewer 人工放行，或删除 ${stateDirForRecovery}/${sessionId}.json 重置计数。`;
     state.save(stateFile, sess);
     if (dryRun) {
       process.stderr.write(JSON.stringify({ decision: 'deny', reason, scenario: null, hard_block: true, deny_count: sess.deny_count }) + '\n');

@@ -5,16 +5,16 @@
   "consecutive_passes": 0,
   "last_scenario": "fix",
   "last_decision": "deny",
-  "last_seen_ts": "2026-06-01T06:28:00.388Z",
+  "last_seen_ts": "2026-06-01T07:14:51.362Z",
   "denial_history": [
     {
       "scenario": "fix",
       "failed_fields": [
-        "(缺少 ## Self-Review 段)"
+        "缺少 ## Self-Review 段"
       ],
-      "ts": "2026-06-01T06:28:00.387Z"
+      "ts": "2026-06-01T07:14:51.362Z"
     }
   ],
   "effective_mode": "regex",
-  "v1_magic_word_seen": true
+  "v1_magic_word_seen": false
 }

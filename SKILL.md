@@ -119,13 +119,16 @@ Each session gets a state file at `<state_dir>/<session_id>.json`. Harness behav
 | `consecutive_passes ≥ 3` | Reset `deny_count` to 0 (don't escalate on stale history). |
 | State file older than 7 days | Pruned on next harness run. |
 
-Writes are atomic (tmp + rename), so concurrent harness invocations on the same session can't corrupt the state file.
+Writes are atomic (tmp + random suffix + rename), so concurrent harness invocations on the same session can't corrupt the state file.
+
+**LLM escalation is one-shot.** Once a session's `effective_mode` flips to `llm`, it stays there for the lifetime of the state file. A clean streak (3+ consecutive passes) resets `deny_count` but does **not** revert to `regex` mode. To de-escalate, delete the session's `.json` file in `state_dir`.
 
 ## 🧪 Testing & Dry-Run
 
 For E2E verification without triggering real hooks:
 - Set `audit.dry_run: true` in config. Harness logs decisions to stderr and exits 0.
 - Or set `HARNESS_DRY_RUN=1` env var (test-harness.cjs uses this).
+- **Note:** dry-run mode still updates the session's state file (deny_count, consecutive_passes, effective_mode). This is intentional — the multi-step fixtures (escalation, hard-block, reset) rely on it. For one-off CLI testing, use a separate `state_dir` or a different `session_id` to avoid polluting real session state.
 - Run the bundled fixture suite:
   ```bash
   node scripts/test-harness.cjs

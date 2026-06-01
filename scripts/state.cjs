@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const STATE_VERSION = 2;
 const TTL_DAYS = 7;
@@ -34,7 +35,8 @@ function createDefaultState(sessionId) {
 function atomicWrite(filePath, obj) {
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
-  const tmp = path.join(dir, `.${path.basename(filePath)}.${process.pid}.${Date.now()}.tmp`);
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const tmp = path.join(dir, `.${path.basename(filePath)}.${process.pid}.${suffix}.tmp`);
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2));
   fs.renameSync(tmp, filePath);
 }
